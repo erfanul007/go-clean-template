@@ -1,0 +1,82 @@
+# ----------------------
+# Go Build Artifacts
+# ----------------------
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.o
+*.a
+go-clean-template
+
+# ----------------------
+# Coverage & Debug
+# ----------------------
+*.cover
+*.coverprofile
+*.out
+coverage.html
+debug
+
+# ----------------------
+# Ent / Codegen
+# ----------------------
+*.gen.go
+*.pb.go
+ent/ent.go
+
+# ----------------------
+# Environment Config
+# ----------------------
+.env
+.env.*
+!.env.example
+
+# ----------------------
+# Logs & Temp Files
+# ----------------------
+*.log
+logs/
+tmp/
+temp/
+
+# ----------------------
+# IDE / Editor / System
+# ----------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# ----------------------
+# Vendor / Modules
+# ----------------------
+vendor/
+go.work
+
+# ----------------------
+# Docker
+# ----------------------
+.docker/
+docker-compose.override.yml
+
+# ----------------------
+# Build Artifacts
+# ----------------------
+bin/
+dist/
+
+# ----------------------
+# Certificates
+# ----------------------
+*.pem
+*.crt
+*.key
+
+# ----------------------
+# Taskfile / CLI Tools
+# ----------------------
+.task/

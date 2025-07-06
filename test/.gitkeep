@@ -1,0 +1,21 @@
+# Test Directory
+
+This directory will contain all test files and test utilities.
+
+## Future Implementation:
+- Unit tests for domain logic
+- Integration tests for API endpoints
+- Repository tests with test database
+- Test utilities and fixtures
+- Performance tests
+- End-to-end tests
+
+## Test Structure:
+```
+test/
+├── unit/           # Unit tests
+├── integration/    # Integration tests
+├── fixtures/       # Test data fixtures
+├── utils/          # Test utilities
+└── e2e/           # End-to-end tests
+```

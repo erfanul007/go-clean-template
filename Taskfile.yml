@@ -1,0 +1,219 @@
+version: "3"
+
+env:
+  BINARY_NAME: go-clean-template
+  BINARY_PATH: ./cmd/api
+  DOCKER_IMAGE: go-clean-template
+  GO_IMAGE: golang:1.24-alpine
+  LINT_IMAGE: golangci/golangci-lint:latest
+  COMPOSE_FILE: deployments/docker-compose.yml
+  # Go module cache volumes for persistence
+  GO_MOD_CACHE: go-mod-cache
+  GO_BUILD_CACHE: go-build-cache
+  DOCKER_RUN_GO: docker run --rm -v .:/app -v {{.GO_MOD_CACHE}}:/go/pkg/mod -v {{.GO_BUILD_CACHE}}:/root/.cache/go-build -w /app {{.GO_IMAGE}}
+  DOCKER_RUN_LINT: docker run --rm -v .:/app -v {{.GO_MOD_CACHE}}:/go/pkg/mod -w /app {{.LINT_IMAGE}}
+  SWAG_INSTALL: go install github.com/swaggo/swag/cmd/swag@latest
+
+tasks:
+  # Development Commands
+  dev:
+    desc: Run in development mode with live reload
+    cmds:
+      - task: compose-up
+
+  start:
+    desc: Quick start - setup and run development environment
+    cmds:
+      - task: setup
+      - task: dev
+
+  check:
+    desc: Run all code quality checks (format, lint, test, swagger)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: test
+      - task: swag-generate
+
+  # Go Commands (Docker-First with Module Caching)
+  build:
+    desc: Build the Go API binary in Docker with module caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go build -o {{.BINARY_NAME}} -v {{.BINARY_PATH}}"
+
+  fmt:
+    desc: Format Go code in Docker with module caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go fmt ./..."
+
+  lint:
+    desc: Lint code using golangci-lint in Docker with module caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_LINT}} golangci-lint run"
+
+  test:
+    desc: Run unit tests in Docker with module caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go test -v ./..."
+
+  test-coverage:
+    desc: Run tests with coverage report in Docker with module caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go test -v -coverprofile=coverage.out ./..."
+      - "{{.DOCKER_RUN_GO}} go tool cover -html=coverage.out -o coverage.html"
+
+  generate:
+    desc: Run go generate in Docker with module caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go generate ./..."
+
+  # Swagger Documentation
+  swag-generate:
+    desc: Generate Swagger documentation using Docker
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} sh -c '{{.SWAG_INSTALL}} && swag init -g cmd/api/main.go -o docs'"
+
+  swag-fmt:
+    desc: Format Swagger comments using Docker
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} sh -c '{{.SWAG_INSTALL}} && swag fmt -g cmd/api/main.go'"
+
+  swag-validate:
+    desc: Validate Swagger documentation using Docker
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} sh -c '{{.SWAG_INSTALL}} && swag init -g cmd/api/main.go -o docs --parseVendor'"
+
+  # Dependency Management with Caching
+  deps:
+    desc: Download and tidy Go dependencies in Docker with caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go mod download"
+      - "{{.DOCKER_RUN_GO}} go mod tidy"
+
+  deps-update:
+    desc: Update all Go dependencies in Docker with caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go get -u ./..."
+      - "{{.DOCKER_RUN_GO}} go mod tidy"
+
+  deps-vendor:
+    desc: Create vendor directory in Docker with caching
+    cmds:
+      - task: ensure-volumes
+      - "{{.DOCKER_RUN_GO}} go mod vendor"
+
+  # Docker Operations
+  docker-build:
+    desc: Build Docker image
+    cmds:
+      - docker build -f build/Dockerfile -t {{.DOCKER_IMAGE}}:latest .
+
+  compose-up:
+    desc: Start all services via Docker Compose
+    cmds:
+      - docker compose -f {{.COMPOSE_FILE}} up -d
+
+  compose-down:
+    desc: Stop all services
+    cmds:
+      - docker compose -f {{.COMPOSE_FILE}} down
+
+  compose-logs:
+    desc: Show container logs
+    cmds:
+      - docker compose -f {{.COMPOSE_FILE}} logs -f
+
+  compose-rebuild:
+    desc: Rebuild and restart all services
+    cmds:
+      - docker compose -f {{.COMPOSE_FILE}} up -d --build
+
+  compose-clean:
+    desc: Stop services and remove volumes (clean slate)
+    cmds:
+      - docker compose -f {{.COMPOSE_FILE}} down -v
+      - docker system prune -f
+
+
+
+  # Project Management
+  setup:
+    desc: One-time project setup for Docker-first development
+    cmds:
+      - task: copy-env
+      - task: deps
+      - echo "Setup complete! Run 'task dev' to start development environment"
+
+  clean:
+    desc: Clean everything (containers, volumes, images)
+    cmds:
+      - task: compose-clean
+      - docker image rm {{.DOCKER_IMAGE}}:latest 2>/dev/null || true
+      - echo "Clean complete!"
+
+  clean-cache:
+    desc: Clean Go module and build caches
+    cmds:
+      - docker volume rm {{.GO_MOD_CACHE}} 2>/dev/null || true
+      - docker volume rm {{.GO_BUILD_CACHE}} 2>/dev/null || true
+      - echo "Go caches cleaned!"
+
+  clean-all:
+    desc: Clean everything including Go caches
+    cmds:
+      - task: clean
+      - task: clean-cache
+
+  ensure-volumes:
+    internal: true
+    desc: Ensure Docker volumes exist for Go caching
+    cmds:
+      - docker volume create {{.GO_MOD_CACHE}} 2>/dev/null || true
+      - docker volume create {{.GO_BUILD_CACHE}} 2>/dev/null || true
+
+  restart:
+    desc: Restart development environment
+    cmds:
+      - task: compose-down
+      - task: compose-up
+
+  logs:
+    desc: Show live logs from all services
+    cmds:
+      - task: compose-logs
+
+  health:
+    desc: Check health of all services
+    cmds:
+      - docker compose -f {{.COMPOSE_FILE}} ps
+      - docker compose -f {{.COMPOSE_FILE}} exec -T api wget --no-verbose --tries=1 --spider http://localhost:8080/health || echo "API not ready yet"
+
+  test-docker:
+    desc: Run tests in running Docker environment
+    cmds:
+      - docker compose -f {{.COMPOSE_FILE}} exec api go test -v ./...
+
+  copy-env:
+    internal: true
+    desc: Cross-platform .env file copy
+    preconditions:
+      - sh: '[ ! -f .env ] || echo ".env already exists"'
+        msg: .env already exists
+    cmds:
+      - |
+        {{if eq OS "windows"}}
+        powershell -Command "Copy-Item -Path .env.example -Destination .env -Force"
+        {{else}}
+        cp .env.example .env
+        {{end}}

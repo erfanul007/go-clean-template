@@ -1,0 +1,8 @@
+# Data Transfer Objects (DTOs)
+
+This directory will contain request and response DTOs for HTTP API.
+
+## Future Implementation:
+- Request DTOs (input validation)
+- Response DTOs (output formatting)
+- Entity DTOs (data transfer)

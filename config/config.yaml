@@ -1,0 +1,25 @@
+server:
+  port: "8080"
+  host: "localhost"
+  read_timeout: 30
+  write_timeout: 30
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "postgres"
+  dbname: "app_db"
+  sslmode: "disable"
+
+auth:
+  jwt_secret: "your-secret-key"
+  jwt_expiration: 24
+
+logging:
+  level: "info"
+  format: "json"
+
+swagger:
+  enabled: true
+  route: "/swagger/*"

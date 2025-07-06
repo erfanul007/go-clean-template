@@ -1,0 +1,131 @@
+basePath: /api/v1
+definitions:
+  handlers.HealthResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      service:
+        type: string
+      status:
+        type: string
+      timestamp:
+        type: string
+      uptime:
+        type: string
+      version:
+        type: string
+    type: object
+  handlers.HeartbeatResponse:
+    properties:
+      beat:
+        type: string
+      service:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  handlers.SystemInfoResponse:
+    properties:
+      cpu_count:
+        type: integer
+      go_version:
+        type: string
+      goroutines:
+        type: integer
+      memory_alloc_mb:
+        type: string
+      memory_total_mb:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: A Go API template built with Clean Architecture and Domain-Driven Design
+    (DDD) principles.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Go Clean Architecture API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Returns detailed health status of the API and its dependencies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Get detailed health information
+      tags:
+      - health
+  /heartbeat:
+    get:
+      description: Returns a simple heartbeat response to check if the service is
+        running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HeartbeatResponse'
+      summary: Get heartbeat status
+      tags:
+      - health
+  /live:
+    get:
+      description: Checks if the service is alive
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Check service liveness
+      tags:
+      - health
+  /ready:
+    get:
+      description: Checks if the service is ready to serve traffic
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Check service readiness
+      tags:
+      - health
+  /system:
+    get:
+      description: Returns information about the system running the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SystemInfoResponse'
+      summary: Get system information
+      tags:
+      - health
+schemes:
+- http
+- https
+swagger: "2.0"

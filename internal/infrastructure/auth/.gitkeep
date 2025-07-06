@@ -1,0 +1,10 @@
+# Authentication
+
+This directory will contain authentication and authorization implementations.
+
+## Future Implementation:
+- JWT token generation and validation
+- Role-based access control (RBAC)
+- Permission management
+- Authentication service
+- Identity management

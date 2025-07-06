@@ -1,0 +1,8 @@
+# Data Transfer Objects (DTOs)
+# This directory contains DTOs for HTTP request/response handling
+# in the presentation layer
+
+# Example structure:
+# - Request DTOs (input validation)
+# - Response DTOs (output formatting)
+# - Entity DTOs (data transfer)

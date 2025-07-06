@@ -1,0 +1,9 @@
+# Infrastructure HTTP Middleware
+# This directory contains infrastructure-specific HTTP middleware
+# that integrates with external systems and services
+
+# Example structure:
+# - Database connection middleware
+# - External service authentication middleware
+# - Infrastructure monitoring middleware
+# - Third-party integration middleware

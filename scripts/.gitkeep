@@ -1,0 +1,11 @@
+# Development Scripts
+
+This directory will contain development and deployment scripts.
+
+## Future Implementation:
+- Database migration scripts
+- Seed data scripts
+- Development setup scripts
+- Build and deployment scripts
+- Code generation scripts
+- Testing scripts

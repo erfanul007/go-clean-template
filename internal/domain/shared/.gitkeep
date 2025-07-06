@@ -1,0 +1,9 @@
+# Shared Domain
+
+This directory will contain shared domain concepts used across multiple domains.
+
+## Future Implementation:
+- Common value objects (ID, Money, Currency, etc.)
+- Shared domain events
+- Common domain interfaces
+- Cross-domain business rules

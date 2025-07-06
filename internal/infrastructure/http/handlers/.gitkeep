@@ -1,0 +1,8 @@
+# Infrastructure HTTP Components
+# This directory contains infrastructure-specific HTTP components
+# that are not part of the presentation layer
+
+# Example structure:
+# - HTTP clients for external services
+# - Third-party API integrations
+# - Infrastructure-specific HTTP utilities

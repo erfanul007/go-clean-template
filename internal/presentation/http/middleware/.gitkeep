@@ -1,0 +1,9 @@
+# HTTP Middleware
+# This directory contains HTTP middleware for the presentation layer
+# following Clean Architecture principles
+
+# Example structure:
+# - Authentication middleware
+# - CORS middleware
+# - Rate limiting middleware
+# - Request logging middleware

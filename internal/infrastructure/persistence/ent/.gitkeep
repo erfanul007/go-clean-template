@@ -1,0 +1,18 @@
+# Ent ORM Setup
+
+This directory will contain Ent ORM configuration and generated code.
+
+## Future Implementation:
+- Ent schema definitions
+- Generated Ent client code
+- Database migrations
+- Ent configuration
+
+## Setup Commands (for future use):
+```bash
+# Initialize Ent
+go run entgo.io/ent/cmd/ent init Entity
+
+# Generate code
+go generate ./ent
+```

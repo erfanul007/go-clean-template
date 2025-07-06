@@ -1,0 +1,10 @@
+# Request Validation
+
+This directory will contain request validation logic and utilities.
+
+## Future Implementation:
+- Request validation middleware
+- Custom validation rules
+- Validation error handling
+- Input sanitization
+- Business rule validation

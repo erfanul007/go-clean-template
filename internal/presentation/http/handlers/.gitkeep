@@ -1,0 +1,8 @@
+# HTTP Handlers
+# This directory contains HTTP request handlers for presentation layer
+# following Clean Architecture principles
+
+# Example structure:
+# - Entity handlers (CRUD operations)
+# - Business logic handlers
+# - API endpoint implementations
