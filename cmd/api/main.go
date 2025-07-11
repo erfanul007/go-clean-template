@@ -18,9 +18,9 @@ import (
 //	@license.name	MIT
 //	@license.url	https://opensource.org/licenses/MIT
 
-//	@host		localhost:8080
-//	@BasePath	/api/v1
-//	@schemes	http https
+// @host		localhost:8080
+// @BasePath	/api/v1
+// @schemes	http https
 func main() {
 	// Load configuration
 	cfg, err := config.Load()
@@ -29,7 +29,7 @@ func main() {
 	}
 
 	// Set Swagger info
-	setSwaggerInfo()
+	setSwaggerInfo(cfg)
 
 	// Create and start server
 	server := http.NewServer(cfg)
@@ -39,14 +39,7 @@ func main() {
 }
 
 // setSwaggerInfo updates Swagger info based on configuration
-func setSwaggerInfo() {
-	// Load configuration
-	cfg, err := config.Load()
-	if err != nil {
-		log.Printf("Failed to load configuration for Swagger: %v, using defaults", err)
-		return
-	}
-
+func setSwaggerInfo(cfg *config.Config) {
 	// Set Swagger info from configuration
 	docs.SwaggerInfo.Title = cfg.Swagger.Title
 	docs.SwaggerInfo.Description = cfg.Swagger.Description

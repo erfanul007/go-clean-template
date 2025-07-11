@@ -33,7 +33,7 @@ tasks:
       - task: fmt
       - task: lint
       - task: test
-      - task: swag-generate
+      - task: swag-gen
 
   # Go Commands (Docker-First with Module Caching)
   build:
@@ -74,7 +74,7 @@ tasks:
       - "{{.DOCKER_RUN_GO}} go generate ./..."
 
   # Swagger Documentation
-  swag-generate:
+  swag-gen:
     desc: Generate Swagger documentation using Docker
     cmds:
       - task: ensure-volumes
