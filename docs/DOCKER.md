@@ -5,60 +5,32 @@ Advanced Docker operations, troubleshooting, and deployment guide for the Go Cle
 ## 🐳 Docker-First Benefits
 
 - **No Local Dependencies:** Only Docker and Task required
-- **Consistent Environment:** Same Go version across all developers and CI/CD
+- **Consistent Environment:** Same Go version (1.24) across all developers and CI/CD
 - **Isolated Operations:** Clean container environment for each command
 - **Cross-Platform:** Works identically on Windows, macOS, and Linux
+- **Multi-Stage Builds:** Optimized for both development and production
 
-## 🔧 Advanced Configuration
+## 🔧 Configuration
 
-### Production Environment Variables
+### Config-First Approach
 
-Critical variables to update for production:
+This project uses a **config-first approach** where `docker-compose.yml` contains minimal environment variables, with most configuration in `config.yaml` or `.env` files.
 
+**Docker Compose Variables (Networking Only):**
 ```bash
-# Security (REQUIRED)
-JWT_SECRET=your-secure-random-secret-key-change-this-in-production
-DB_PASSWORD=secure-database-password
-REDIS_PASSWORD=secure-redis-password
-
-# Environment Configuration
-ENVIRONMENT=production
-LOG_LEVEL=info
-LOG_FORMAT=json
-
-# Server Configuration
-PORT=8080
-HOST=0.0.0.0
-
-# Database Configuration (if external)
-DB_HOST=your-postgres-host
-DB_PORT=5432
-DB_USER=your-db-user
-DB_NAME=your-db-name
-DB_SSLMODE=require
-
-# Redis Configuration (if external)
-REDIS_HOST=your-redis-host
-REDIS_PORT=6379
-
-# Authentication
-JWT_EXPIRATION=3600
+DB_HOST=postgres
+REDIS_HOST=redis
 ```
 
-**Note**: Static configurations (CORS, rate limiting, Swagger, metrics) are now in `config/config.yaml` and don't need environment variables.
+**Configuration Hierarchy:**
+1. **Environment Variables** → Runtime overrides
+2. **config.yaml** → Application defaults
+3. **Code Defaults** → Fallback values
 
-### Data Management
-
-```bash
-# Backup database
-docker run --rm -v go-clean-template_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz -C /data .
-
-# Restore database
-docker run --rm -v go-clean-template_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_backup.tar.gz -C /data
-
-# Inspect volumes
-docker run --rm -v go-clean-template_postgres_data:/data alpine ls -la /data
-```
+### Container Names
+- **API:** `go-clean-template-api`
+- **Database:** `go-clean-template-db`
+- **Redis:** `go-clean-template-redis`
 
 ## 🔍 Debugging
 
@@ -71,16 +43,27 @@ docker exec -it go-clean-template-db psql -U postgres -d app_db
 docker exec -it go-clean-template-redis redis-cli
 
 # Monitor resources
-docker stats go-clean-template-api
+docker stats
 docker stats --no-stream
 
-# Inspect containers
-docker inspect go-clean-template-api
-
 # View logs
-docker logs -t go-clean-template-api
-docker logs --since="1h" go-clean-template-db
-task compose-logs  # All services
+task logs                    # All services
+task compose-logs           # Alternative
+docker compose -f deployments/docker-compose.yml logs api
+docker compose -f deployments/docker-compose.yml logs postgres
+```
+
+### Configuration Debugging
+
+```bash
+# Validate docker-compose configuration
+docker compose -f deployments/docker-compose.yml config
+
+# Check environment setup
+task setup
+
+# Verify service dependencies
+task health
 ```
 
 ## 🐛 Troubleshooting
@@ -88,68 +71,76 @@ task compose-logs  # All services
 ### Common Issues
 
 ```bash
-# Port conflicts
-netstat -an | findstr :8080  # Windows
-lsof -i :8080               # macOS/Linux
+# Service status
+task health
+docker compose -f deployments/docker-compose.yml ps
 
 # Database connectivity
 docker exec go-clean-template-api nc -zv postgres 5432
 
 # Clean rebuild
-task compose-clean
-task compose-rebuild
+task compose-clean          # Remove volumes and containers
+task compose-rebuild        # Rebuild and restart
 
 # Force rebuild without cache
 docker compose -f deployments/docker-compose.yml build --no-cache
-
-# Service status
-task health
-docker compose -f deployments/docker-compose.yml ps
 ```
 
 ### Performance
 
 ```bash
-# Enable BuildKit
+# Enable BuildKit (enabled by default in newer Docker versions)
 set DOCKER_BUILDKIT=1     # Windows
 export DOCKER_BUILDKIT=1  # Linux/Mac
 
-# Check optimized .dockerignore (54 lines, 41% smaller)
+# Check optimized .dockerignore
 type .dockerignore   # Windows
 cat .dockerignore    # Linux/Mac
 ```
 
-**Build Context Optimization**: The `.dockerignore` file has been optimized to exclude unnecessary files while maintaining functionality:
-- **Reduced size**: From 92 to 54 lines (41% reduction)
-- **Better organization**: Grouped by category (Git, docs, IDE, OS, build artifacts, etc.)
-- **Improved performance**: Faster Docker builds with smaller context
+**Build Context Optimization**: The `.dockerignore` file excludes unnecessary files for faster builds and smaller context.
 
-### Configuration System
+## 🏗️ Multi-Stage Docker Architecture
 
-The application uses a **hybrid configuration system** optimized for Docker deployments:
+The `build/Dockerfile` uses a **4-stage build process**:
 
-**Environment Variables** (`.env` → Docker environment):
-- Server settings, database credentials, Redis connection
-- Authentication secrets, logging preferences
-- Environment-specific and sensitive configurations
+**Stage 1: Dependencies** (`deps`):
+- Base Go 1.24 Alpine image with system dependencies
+- Non-root user setup for security
+- Go module download and verification
 
-**Static Configuration** (`config/config.yaml`):
-- CORS policies, rate limiting, Swagger documentation
-- Metrics configuration, server timeouts
-- Application behavior that rarely changes
+**Stage 2: Development** (`development`):
+- Includes Air for live reload
+- Full source code and development tools
+- Optimized for fast iteration
 
-**Benefits for Docker**:
-- **Security**: Secrets only in environment variables
-- **Flexibility**: Easy environment overrides via Docker Compose
-- **Maintainability**: Static configs in version control
-- **Deployment**: Simple `.env` changes for different environments
+**Stage 3: Builder** (`builder`):
+- Compiles optimized production binary
+- Static linking with security flags
+- Minimal attack surface
+
+**Stage 4: Production** (`production`):
+- Minimal Alpine base
+- Only binary and config files
+- Non-root execution
+- Built-in health checks
+
+**Benefits:**
+- **Development**: Fast rebuilds with layer caching
+- **Production**: Minimal image size and attack surface
+- **Security**: Non-root execution in both stages
+- **Performance**: Optimized binaries with static linking
 
 ## 🚀 Production Deployment
 
 ### Image Building
 ```bash
-# Build production image
+# Build production image (targets 'production' stage)
 task docker-build
+
+# Build specific stage
+docker build -f build/Dockerfile --target production -t go-clean-template:prod .
+docker build -f build/Dockerfile --target development -t go-clean-template:dev .
 
 # Tag for registry
 docker tag go-clean-template:latest your-registry.com/go-clean-template:v1.0.0
@@ -159,63 +150,60 @@ docker push your-registry.com/go-clean-template:v1.0.0
 ```
 
 ### Health Monitoring
-- Built-in health checks via `/health` endpoint
-- Service dependency health conditions
-- Use `task health` for status verification
+- **Built-in health checks**: Both development and production images include health checks
+- **Endpoints**: `/health`, `/live`, `/ready` for comprehensive monitoring
+- **Verification**: Use `task health` for status verification
 
-## 🔄 CI/CD Integration
+## 📦 Data Management
 
-### GitHub Actions Example
-```yaml
-name: Docker Build and Test
-on: [push, pull_request]
+```bash
+# Backup database volume
+docker run --rm -v go-clean-template_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz -C /data .
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install Task
-        uses: arduino/setup-task@v1
-      - name: Test
-        run: |
-          task setup
-          task dev &
-          sleep 30
-          task health
-          task test-docker
-          task compose-down
-      - name: Build
-        run: task docker-build
+# Restore database volume
+docker run --rm -v go-clean-template_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_backup.tar.gz -C /data
+
+# Inspect volumes
+docker run --rm -v go-clean-template_postgres_data:/data alpine ls -la /data
 ```
 
-## 📚 Advanced Task Commands
+## 📚 Docker Operations
 
-### Docker Operations
+### Task Commands
 ```bash
+# Development
+task start              # Setup and start development
+task dev                # Start with live reload
+task restart            # Restart development environment
+
+# Docker Compose
 task compose-up         # Start all services
 task compose-down       # Stop all services
 task compose-rebuild    # Rebuild and restart
 task compose-clean      # Remove volumes and containers
 task compose-logs       # View all service logs
-task docker-build       # Build application image
-task health             # Check health of all services
-```
 
-### Development Tools
-```bash
+# Code Quality
+task check              # Run all quality checks
 task fmt                # Format code
 task lint               # Lint code
-task generate           # Run go generate
-task build              # Build binary
-task test               # Run unit tests
-task test-docker        # Test in running environment
-task deps-vendor        # Create vendor directory
+task test               # Run tests
+
+# Build & Dependencies
+task docker-build       # Build production image
+task deps               # Download dependencies
+task deps-update        # Update dependencies
+
+# Project Management
+task setup              # One-time project setup
+task clean              # Clean everything
+task health             # Check service health
 ```
 
-## 📚 Resources
-
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Go Docker Best Practices](https://docs.docker.com/language/golang/)
-- [Task Documentation](https://taskfile.dev/)
-- [Docker Security](https://docs.docker.com/engine/security/)
+### Direct Docker Compose
+```bash
+# Basic operations
+docker compose -f deployments/docker-compose.yml up -d
+docker compose -f deployments/docker-compose.yml down
+docker compose -f deployments/docker-compose.yml logs -f
+```
