@@ -153,7 +153,7 @@ func (h *HealthHandler) Liveness(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Liveness check endpoint called")
 
 	response.Success(w, HealthResponse{
-		Status:    "aaaalive",
+		Status:    "alive",
 		Timestamp: time.Now(),
 		Service:   "go-clean-template",
 		Version:   "1.0.0",
