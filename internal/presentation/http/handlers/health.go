@@ -9,12 +9,10 @@ import (
 	"go-clean-template/internal/shared/response"
 )
 
-// HealthHandler handles health check endpoints
 type HealthHandler struct {
 	logger logger.Logger
 }
 
-// NewHealthHandler creates a new health handler
 func NewHealthHandler(log logger.Logger) *HealthHandler {
 	return &HealthHandler{
 		logger: log,
@@ -46,7 +44,6 @@ type SystemInfoResponse struct {
 
 var startTime = time.Now()
 
-// Health returns basic health status
 // @Summary Get health status
 // @Description Returns the basic health status of the service
 // @Tags Health
@@ -70,7 +67,6 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Health check completed successfully")
 }
 
-// Heartbeat returns a simple heartbeat response
 // @Summary Get heartbeat
 // @Description Returns a simple heartbeat response to verify service is alive
 // @Tags Health
@@ -87,7 +83,6 @@ func (h *HealthHandler) Heartbeat(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// SystemInfo returns detailed system information
 // @Summary Get system information
 // @Description Returns detailed system information including memory usage, CPU count, and runtime stats
 // @Tags Health
@@ -120,7 +115,6 @@ func (h *HealthHandler) SystemInfo(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("System info completed successfully")
 }
 
-// Readiness checks if the service is ready to serve requests
 // @Summary Get readiness status
 // @Description Checks if the service is ready to serve requests by verifying dependencies
 // @Tags Health
@@ -149,7 +143,6 @@ func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Readiness check completed successfully")
 }
 
-// Liveness checks if the service is alive
 // @Summary Get liveness status
 // @Description Checks if the service is alive and responding
 // @Tags Health
@@ -160,7 +153,7 @@ func (h *HealthHandler) Liveness(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Liveness check endpoint called")
 
 	response.Success(w, HealthResponse{
-		Status:    "alive",
+		Status:    "aaaalive",
 		Timestamp: time.Now(),
 		Service:   "go-clean-template",
 		Version:   "1.0.0",

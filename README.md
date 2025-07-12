@@ -140,7 +140,13 @@ infrastructure/
 ```
 
 ### 🤝 Shared (`internal/shared/`)
-**Common utilities** - Error handling, response formatting, validation.
+**Common utilities** - Enhanced error handling with chaining, response formatting, validation.
+```
+shared/
+├── errors/          # Enhanced error handling with cause chaining
+├── response/        # HTTP response utilities with error chain support
+└── validation/      # Input validation helpers
+```
 
 ### 🎯 Key Principles
 - **Dependency Rule**: Outer layers depend on inner layers

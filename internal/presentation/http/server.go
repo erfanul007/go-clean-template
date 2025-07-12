@@ -13,14 +13,12 @@ import (
 	"go-clean-template/internal/infrastructure/logger"
 )
 
-// Server represents the HTTP server
 type Server struct {
 	server *http.Server
 	config *config.Config
 	logger logger.Logger
 }
 
-// NewServer creates a new HTTP server
 func NewServer(config *config.Config, log logger.Logger) *Server {
 	// Setup routes with configuration and logger
 	router := SetupRoutes(config, log)
@@ -39,9 +37,7 @@ func NewServer(config *config.Config, log logger.Logger) *Server {
 	}
 }
 
-// Start starts the HTTP server
 func (s *Server) Start() error {
-	// Start server in a goroutine
 	go func() {
 		s.logger.Info("HTTP server starting",
 			logger.String("port", s.config.Server.Port),
@@ -62,7 +58,6 @@ func (s *Server) Start() error {
 		}
 	}()
 
-	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -70,7 +65,6 @@ func (s *Server) Start() error {
 	return s.Shutdown()
 }
 
-// Shutdown gracefully shuts down the server
 func (s *Server) Shutdown() error {
 	s.logger.Info("Initiating graceful server shutdown")
 

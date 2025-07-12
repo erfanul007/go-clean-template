@@ -2,28 +2,25 @@ package response
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"go-clean-template/internal/shared/errors"
 )
 
-// SuccessResponse represents a successful API response with metadata
 type SuccessResponse struct {
 	Meta *Meta `json:"meta,omitempty"`
 }
 
-// ErrorResponse represents an error API response
 type ErrorResponse struct {
 	Error *ErrorInfo `json:"error"`
 }
 
-// ErrorInfo represents error information in response
 type ErrorInfo struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-// Meta represents metadata for responses (pagination, etc.)
 type Meta struct {
 	Page       int `json:"page,omitempty"`
 	Limit      int `json:"limit,omitempty"`
@@ -31,14 +28,11 @@ type Meta struct {
 	TotalPages int `json:"total_pages,omitempty"`
 }
 
-// Success creates a successful response
 func Success(w http.ResponseWriter, data interface{}) {
-	JSON(w, http.StatusOK, data)
+	sendJSON(w, http.StatusOK, data)
 }
 
-// SuccessWithMeta creates a successful response with metadata
 func SuccessWithMeta(w http.ResponseWriter, data interface{}, meta *Meta) {
-	// For responses with metadata, we need to create a wrapper
 	response := struct {
 		Data interface{} `json:"data"`
 		Meta *Meta       `json:"meta"`
@@ -46,12 +40,11 @@ func SuccessWithMeta(w http.ResponseWriter, data interface{}, meta *Meta) {
 		Data: data,
 		Meta: meta,
 	}
-	JSON(w, http.StatusOK, response)
+	sendJSON(w, http.StatusOK, response)
 }
 
-// Error creates an error response
 func Error(w http.ResponseWriter, status int, code, message string) {
-	JSON(w, status, ErrorResponse{
+	sendJSON(w, status, ErrorResponse{
 		Error: &ErrorInfo{
 			Code:    code,
 			Message: message,
@@ -59,9 +52,8 @@ func Error(w http.ResponseWriter, status int, code, message string) {
 	})
 }
 
-// ErrorFromAppError creates an error response from an AppError
 func ErrorFromAppError(w http.ResponseWriter, err *errors.AppError) {
-	JSON(w, err.Status, ErrorResponse{
+	sendJSON(w, err.Status, ErrorResponse{
 		Error: &ErrorInfo{
 			Code:    err.Code,
 			Message: err.Message,
@@ -69,9 +61,31 @@ func ErrorFromAppError(w http.ResponseWriter, err *errors.AppError) {
 	})
 }
 
-// JSON writes a JSON response
-func JSON(w http.ResponseWriter, status int, data interface{}) {
+func GetErrorChain(err *errors.AppError) string {
+	if err.Cause == nil {
+		return err.Message
+	}
+	return fmt.Sprintf("%s: %v", err.Message, err.Cause)
+}
+
+func GetFullErrorChain(err *errors.AppError) []string {
+	var chain []string
+	chain = append(chain, err.Message)
+
+	current := err.Cause
+	for current != nil {
+		chain = append(chain, current.Error())
+		if unwrapper, ok := current.(interface{ Unwrap() error }); ok {
+			current = unwrapper.Unwrap()
+		} else {
+			break
+		}
+	}
+	return chain
+}
+
+func sendJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(data) // Ignore encoding errors as headers are already written
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(data)
 }

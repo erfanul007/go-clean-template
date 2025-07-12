@@ -4,7 +4,7 @@
 FROM golang:1.24-alpine AS deps
 
 # Install system dependencies and create user in one layer
-RUN apk add --no-cache git ca-certificates tzdata curl && \
+RUN apk add --no-cache git ca-certificates tzdata curl su-exec && \
     adduser -D -s /bin/sh -u 1000 devuser
 
 WORKDIR /app
@@ -22,6 +22,14 @@ RUN go install github.com/air-verse/air@latest
 
 # Copy source code
 COPY --chown=devuser:devuser . .
+
+# Create logs directory and set permissions
+RUN mkdir -p /app/logs && \
+    chown -R devuser:devuser /app/logs && \
+    chmod -R 755 /app/logs
+
+# Switch to devuser
+USER devuser
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \

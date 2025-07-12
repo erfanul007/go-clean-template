@@ -6,7 +6,7 @@ server:
   write_timeout: 30
 
 logging:
-  level: "info"
+  level: "warn"
   format: "json"
   enable_caller: true
   enable_stacktrace: false
@@ -19,7 +19,7 @@ logging:
     max_backups: 5     # Number of backup files
     max_age: 30        # Days
     compress: true
-    separate_levels: true  # Create separate files for info, warn, error
+    separate_files: true 
 
 swagger:
   enabled: true

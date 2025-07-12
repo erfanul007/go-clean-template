@@ -52,13 +52,12 @@ services:
       - LOG_LEVEL=debug
       - JWT_SECRET=dev-secret
       - JWT_EXPIRATION=86400
-      - GOPROXY=https://proxy.golang.org,direct
-      - GOSUMDB=sum.golang.org
+
     volumes:
       - ../:/app:cached
       - go_modules:/go/pkg/mod
-      - go_build_cache:/root/.cache/go-build
-      - app_logs:/app/logs
+      - go_build_cache:/home/devuser/.cache/go-build
+      - ../logs:/app/logs:cached
     depends_on:
       postgres:
         condition: service_healthy
@@ -83,4 +82,3 @@ volumes:
   redis_data:
   go_modules:
   go_build_cache:
-  app_logs:

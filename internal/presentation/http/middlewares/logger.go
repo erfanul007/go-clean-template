@@ -33,8 +33,6 @@ var (
 	ipHeaders = []string{"X-Forwarded-For", "X-Real-IP", "CF-Connecting-IP"}
 )
 
-// RequestLogger creates a structured logging middleware following industry best practices
-// Logs HTTP requests with correlation ID, performance metrics, and security-relevant information
 func RequestLogger(log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -58,8 +56,6 @@ func RequestLogger(log logger.Logger) func(next http.Handler) http.Handler {
 	}
 }
 
-// Recoverer creates a panic recovery middleware with comprehensive error logging
-// Follows industry best practices for panic recovery and structured error reporting
 func Recoverer(log logger.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -85,14 +81,12 @@ func Recoverer(log logger.Logger) func(next http.Handler) http.Handler {
 
 // Helper functions for logging middleware
 
-// requestContext holds common request information
 type requestContext struct {
 	correlationID string
 	requestID     string
 	clientIP      string
 }
 
-// shouldSkipLogging determines if a request should be skipped from logging
 func shouldSkipLogging(path string) bool {
 	if skipPaths[path] {
 		return true
@@ -113,7 +107,6 @@ func shouldSkipLogging(path string) bool {
 	return false
 }
 
-// extractRequestContext extracts common request context information
 func extractRequestContext(r *http.Request) requestContext {
 	return requestContext{
 		correlationID: getHeaderValue(r, correlationHeaders, middleware.GetReqID(r.Context())),
@@ -122,7 +115,6 @@ func extractRequestContext(r *http.Request) requestContext {
 	}
 }
 
-// getHeaderValue extracts the first non-empty header value from a list
 func getHeaderValue(r *http.Request, headers []string, fallback string) string {
 	for _, header := range headers {
 		if value := r.Header.Get(header); value != "" {
@@ -132,7 +124,6 @@ func getHeaderValue(r *http.Request, headers []string, fallback string) string {
 	return fallback
 }
 
-// extractClientIP extracts the real client IP address from request
 func extractClientIP(r *http.Request) string {
 	// Check proxy headers in order
 	for _, header := range ipHeaders {
@@ -154,7 +145,6 @@ func extractClientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 
-// buildRequestFields creates log fields for HTTP requests
 func buildRequestFields(r *http.Request, ctx requestContext, ww middleware.WrapResponseWriter, duration time.Duration) []logger.Field {
 	fields := []logger.Field{
 		logger.String("method", r.Method),
@@ -179,7 +169,6 @@ func buildRequestFields(r *http.Request, ctx requestContext, ww middleware.WrapR
 	return fields
 }
 
-// buildPanicFields creates log fields for panic recovery
 func buildPanicFields(r *http.Request, ctx requestContext, panicValue interface{}) []logger.Field {
 	return []logger.Field{
 		logger.String("method", r.Method),
@@ -205,7 +194,6 @@ func logWithLevel(log logger.Logger, status int, message string, fields ...logge
 	}
 }
 
-// isResponseWritten checks if the response has already been written
 func isResponseWritten(w http.ResponseWriter) bool {
 	if rw, ok := w.(interface{ Status() int }); ok {
 		return rw.Status() != 0

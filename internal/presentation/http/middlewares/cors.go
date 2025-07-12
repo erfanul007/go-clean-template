@@ -9,9 +9,7 @@ import (
 	"go-clean-template/internal/infrastructure/config"
 )
 
-// CORS creates a CORS middleware with configurable settings
-// Implements security best practices to prevent CORS vulnerabilities
-func CORS(corsConfig config.CORSConfig) func(next http.Handler) http.Handler {
+func CORS(corsConfig config.CORSConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
@@ -40,7 +38,6 @@ func CORS(corsConfig config.CORSConfig) func(next http.Handler) http.Handler {
 	}
 }
 
-// setCORSHeaders sets the appropriate CORS headers based on configuration
 func setCORSHeaders(w http.ResponseWriter, corsConfig config.CORSConfig, origin string, originAllowed bool) {
 	// Set origin header only for allowed origins
 	if originAllowed {
@@ -107,7 +104,6 @@ func isOriginAllowed(origin string, allowedOrigins []string) bool {
 	return false
 }
 
-// isSubdomainMatch validates subdomain patterns securely
 func isSubdomainMatch(parsedOrigin *url.URL, allowedPattern string) bool {
 	domain := strings.TrimPrefix(allowedPattern, "*.")
 	if domain == "" {

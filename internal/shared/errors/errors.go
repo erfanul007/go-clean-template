@@ -1,11 +1,9 @@
 package errors
 
 import (
-	"fmt"
 	"net/http"
 )
 
-// AppError represents an application error with context
 type AppError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -13,16 +11,11 @@ type AppError struct {
 	Cause   error  `json:"-"`
 }
 
-// Error implements the error interface
 func (e *AppError) Error() string {
-	if e.Cause != nil {
-		return fmt.Sprintf("%s: %v", e.Message, e.Cause)
-	}
 	return e.Message
 }
 
-// New creates a new AppError with the given status, code, and message
-func New(status int, code, message string) *AppError {
+func NewAppError(code, message string, status int) *AppError {
 	return &AppError{
 		Code:    code,
 		Message: message,
@@ -30,8 +23,7 @@ func New(status int, code, message string) *AppError {
 	}
 }
 
-// NewWithCause creates a new AppError with a cause
-func NewWithCause(status int, code, message string, cause error) *AppError {
+func NewAppErrorWithCause(code, message string, status int, cause error) *AppError {
 	return &AppError{
 		Code:    code,
 		Message: message,
@@ -40,23 +32,54 @@ func NewWithCause(status int, code, message string, cause error) *AppError {
 	}
 }
 
-// Common error constructors for convenience
-func NewBadRequest(message string) *AppError {
-	return New(http.StatusBadRequest, "BAD_REQUEST", message)
+func (e *AppError) Unwrap() error {
+	return e.Cause
 }
 
-func NewUnauthorized(message string) *AppError {
-	return New(http.StatusUnauthorized, "UNAUTHORIZED", message)
+func BadRequest(code, message string) *AppError {
+	return NewAppError(code, message, http.StatusBadRequest)
 }
 
-func NewForbidden(message string) *AppError {
-	return New(http.StatusForbidden, "FORBIDDEN", message)
+func BadRequestWithCause(code, message string, cause error) *AppError {
+	return NewAppErrorWithCause(code, message, http.StatusBadRequest, cause)
 }
 
-func NewNotFound(message string) *AppError {
-	return New(http.StatusNotFound, "NOT_FOUND", message)
+func Unauthorized(code, message string) *AppError {
+	return NewAppError(code, message, http.StatusUnauthorized)
 }
 
-func NewInternalError(message string, cause error) *AppError {
-	return NewWithCause(http.StatusInternalServerError, "INTERNAL_ERROR", message, cause)
+func UnauthorizedWithCause(code, message string, cause error) *AppError {
+	return NewAppErrorWithCause(code, message, http.StatusUnauthorized, cause)
+}
+
+func Forbidden(code, message string) *AppError {
+	return NewAppError(code, message, http.StatusForbidden)
+}
+
+func ForbiddenWithCause(code, message string, cause error) *AppError {
+	return NewAppErrorWithCause(code, message, http.StatusForbidden, cause)
+}
+
+func NotFound(code, message string) *AppError {
+	return NewAppError(code, message, http.StatusNotFound)
+}
+
+func NotFoundWithCause(code, message string, cause error) *AppError {
+	return NewAppErrorWithCause(code, message, http.StatusNotFound, cause)
+}
+
+func Conflict(code, message string) *AppError {
+	return NewAppError(code, message, http.StatusConflict)
+}
+
+func ConflictWithCause(code, message string, cause error) *AppError {
+	return NewAppErrorWithCause(code, message, http.StatusConflict, cause)
+}
+
+func InternalServer(code, message string) *AppError {
+	return NewAppError(code, message, http.StatusInternalServerError)
+}
+
+func InternalServerWithCause(code, message string, cause error) *AppError {
+	return NewAppErrorWithCause(code, message, http.StatusInternalServerError, cause)
 }

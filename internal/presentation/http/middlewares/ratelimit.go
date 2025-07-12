@@ -21,7 +21,6 @@ type RateLimiter struct {
 	mu        sync.RWMutex
 }
 
-// NewRateLimiter creates a new sliding window rate limiter
 func NewRateLimiter(maxRequests int, window time.Duration) *RateLimiter {
 	return &RateLimiter{
 		requests:  make([]time.Time, 0, maxRequests),
@@ -30,7 +29,6 @@ func NewRateLimiter(maxRequests int, window time.Duration) *RateLimiter {
 	}
 }
 
-// Allow checks if a request is allowed and returns remaining tokens and reset time
 func (rl *RateLimiter) Allow() (bool, int, time.Time) {
 	now := time.Now()
 
@@ -75,7 +73,6 @@ type ClientLimiterStore struct {
 	window      time.Duration
 }
 
-// NewClientLimiterStore creates a new store for client rate limiters
 func NewClientLimiterStore(maxRequests int, window time.Duration) *ClientLimiterStore {
 	return &ClientLimiterStore{
 		limiters:    make(map[string]*RateLimiter),
@@ -85,7 +82,6 @@ func NewClientLimiterStore(maxRequests int, window time.Duration) *ClientLimiter
 	}
 }
 
-// GetLimiter returns a rate limiter for the given client, creating one if needed
 func (cls *ClientLimiterStore) GetLimiter(clientID string) *RateLimiter {
 	// Periodic cleanup to prevent memory leaks
 	if time.Since(cls.lastCleanup) > 5*time.Minute {
@@ -104,7 +100,7 @@ func (cls *ClientLimiterStore) GetLimiter(clientID string) *RateLimiter {
 	cls.mu.Lock()
 	defer cls.mu.Unlock()
 
-	if limiter, exists := cls.limiters[clientID]; exists {
+	if _, exists := cls.limiters[clientID]; exists {
 		return limiter
 	}
 
@@ -113,7 +109,6 @@ func (cls *ClientLimiterStore) GetLimiter(clientID string) *RateLimiter {
 	return limiter
 }
 
-// cleanupInactiveLimiters removes limiters that haven't been used recently
 func (cls *ClientLimiterStore) cleanupInactiveLimiters() {
 	now := time.Now()
 	cls.mu.Lock()
@@ -134,7 +129,6 @@ func (cls *ClientLimiterStore) cleanupInactiveLimiters() {
 	cls.lastCleanup = now
 }
 
-// RateLimit creates a rate limiting middleware with industry best practices
 func RateLimit(rateLimitConfig config.RateLimitConfig) func(next http.Handler) http.Handler {
 	// Create a store for client limiters
 	store := NewClientLimiterStore(rateLimitConfig.RequestsPerMinute, time.Minute)
@@ -182,7 +176,6 @@ func RateLimit(rateLimitConfig config.RateLimitConfig) func(next http.Handler) h
 	}
 }
 
-// setRateLimitHeaders sets standard rate limiting headers
 func setRateLimitHeaders(w http.ResponseWriter, limit, remaining int, resetTime time.Time) {
 	w.Header().Set("X-RateLimit-Limit", strconv.Itoa(limit))
 	w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
@@ -190,7 +183,6 @@ func setRateLimitHeaders(w http.ResponseWriter, limit, remaining int, resetTime 
 	w.Header().Set("X-RateLimit-Window", "60") // 60 seconds window
 }
 
-// getClientIP extracts the client IP address from the request with security considerations
 func getClientIP(r *http.Request) string {
 	// List of headers to check in order of preference
 	headers := []string{"X-Forwarded-For", "X-Real-IP", "CF-Connecting-IP"}
@@ -211,7 +203,6 @@ func getClientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 
-// extractIPFromHeader extracts and validates IP from header value
 func extractIPFromHeader(headerValue string) string {
 	if headerValue == "" {
 		return ""
