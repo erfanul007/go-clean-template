@@ -1,11 +1,10 @@
 package main
 
 import (
-	"log"
-
-	"go-clean-template/docs"
 	"go-clean-template/internal/infrastructure/config"
+	"go-clean-template/internal/infrastructure/logger"
 	"go-clean-template/internal/presentation/http"
+	"go-clean-template/internal/presentation/swagger"
 )
 
 //	@title			Go Clean Architecture API
@@ -18,33 +17,30 @@ import (
 //	@license.name	MIT
 //	@license.url	https://opensource.org/licenses/MIT
 
-// @host		localhost:8080
 // @BasePath	/api/v1
 // @schemes	http https
 func main() {
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		log := logger.NewSimple("error", "console")
+		log.Fatal("Failed to load configuration", logger.Error(err))
 	}
 
-	// Set Swagger info
-	setSwaggerInfo(cfg)
+	log := logger.MustWithConfig(cfg.Logging)
+	defer func() {
+		_ = log.Sync()
+	}()
 
-	// Create and start server
-	server := http.NewServer(cfg)
+	log.Info("Application starting",
+		logger.String("environment", cfg.Server.Environment),
+		logger.String("version", "1.0.0"),
+		logger.String("port", cfg.Server.Port),
+	)
+
+	swagger.Initialize(cfg.Swagger)
+
+	server := http.NewServer(cfg, log)
 	if err := server.Start(); err != nil {
-		log.Fatalf("Server error: %v", err)
+		log.Fatal("Server failed to start", logger.Error(err))
 	}
-}
-
-// setSwaggerInfo updates Swagger info based on configuration
-func setSwaggerInfo(cfg *config.Config) {
-	// Set Swagger info from configuration
-	docs.SwaggerInfo.Title = cfg.Swagger.Title
-	docs.SwaggerInfo.Description = cfg.Swagger.Description
-	docs.SwaggerInfo.Version = cfg.Swagger.Version
-	docs.SwaggerInfo.Host = cfg.Swagger.Host
-	docs.SwaggerInfo.BasePath = cfg.Swagger.BasePath
-	docs.SwaggerInfo.Schemes = cfg.Swagger.Schemes
 }

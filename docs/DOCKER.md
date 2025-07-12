@@ -16,19 +16,36 @@ Advanced Docker operations, troubleshooting, and deployment guide for the Go Cle
 Critical variables to update for production:
 
 ```bash
-# Security
-JWT_SECRET=your-secure-random-secret-key
+# Security (REQUIRED)
+JWT_SECRET=your-secure-random-secret-key-change-this-in-production
 DB_PASSWORD=secure-database-password
 REDIS_PASSWORD=secure-redis-password
 
-# Environment
-ENV=production
+# Environment Configuration
+ENVIRONMENT=production
 LOG_LEVEL=info
+LOG_FORMAT=json
 
-# External Services (if not using Docker containers)
+# Server Configuration
+PORT=8080
+HOST=0.0.0.0
+
+# Database Configuration (if external)
 DB_HOST=your-postgres-host
+DB_PORT=5432
+DB_USER=your-db-user
+DB_NAME=your-db-name
+DB_SSLMODE=require
+
+# Redis Configuration (if external)
 REDIS_HOST=your-redis-host
+REDIS_PORT=6379
+
+# Authentication
+JWT_EXPIRATION=3600
 ```
+
+**Note**: Static configurations (CORS, rate limiting, Swagger, metrics) are now in `config/config.yaml` and don't need environment variables.
 
 ### Data Management
 
@@ -97,10 +114,35 @@ docker compose -f deployments/docker-compose.yml ps
 set DOCKER_BUILDKIT=1     # Windows
 export DOCKER_BUILDKIT=1  # Linux/Mac
 
-# Check .dockerignore
+# Check optimized .dockerignore (54 lines, 41% smaller)
 type .dockerignore   # Windows
 cat .dockerignore    # Linux/Mac
 ```
+
+**Build Context Optimization**: The `.dockerignore` file has been optimized to exclude unnecessary files while maintaining functionality:
+- **Reduced size**: From 92 to 54 lines (41% reduction)
+- **Better organization**: Grouped by category (Git, docs, IDE, OS, build artifacts, etc.)
+- **Improved performance**: Faster Docker builds with smaller context
+
+### Configuration System
+
+The application uses a **hybrid configuration system** optimized for Docker deployments:
+
+**Environment Variables** (`.env` → Docker environment):
+- Server settings, database credentials, Redis connection
+- Authentication secrets, logging preferences
+- Environment-specific and sensitive configurations
+
+**Static Configuration** (`config/config.yaml`):
+- CORS policies, rate limiting, Swagger documentation
+- Metrics configuration, server timeouts
+- Application behavior that rarely changes
+
+**Benefits for Docker**:
+- **Security**: Secrets only in environment variables
+- **Flexibility**: Easy environment overrides via Docker Compose
+- **Maintainability**: Static configs in version control
+- **Deployment**: Simple `.env` changes for different environments
 
 ## 🚀 Production Deployment
 
