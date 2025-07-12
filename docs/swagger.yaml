@@ -17,29 +17,29 @@ definitions:
       version:
         type: string
     type: object
-  handlers.HeartbeatResponse:
+  handlers.SystemInfoResponse:
     properties:
-      beat:
+      go_version:
         type: string
+      memory:
+        additionalProperties:
+          type: integer
+        type: object
+      num_cpu:
+        type: integer
+      num_goroutine:
+        type: integer
       service:
+        type: string
+      status:
         type: string
       timestamp:
         type: string
-    type: object
-  handlers.SystemInfoResponse:
-    properties:
-      cpu_count:
-        type: integer
-      go_version:
+      uptime:
         type: string
-      goroutines:
-        type: integer
-      memory_alloc_mb:
-        type: string
-      memory_total_mb:
+      version:
         type: string
     type: object
-host: localhost:8080
 info:
   contact:
     email: support@example.com
@@ -54,7 +54,7 @@ info:
 paths:
   /health:
     get:
-      description: Returns detailed health status of the API and its dependencies
+      description: Returns the basic health status of the service
       produces:
       - application/json
       responses:
@@ -62,59 +62,53 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/handlers.HealthResponse'
-      summary: Get detailed health information
+      summary: Get health status
       tags:
-      - health
+      - Health
   /heartbeat:
     get:
-      description: Returns a simple heartbeat response to check if the service is
-        running
+      description: Returns a simple heartbeat response to verify service is alive
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.HeartbeatResponse'
-      summary: Get heartbeat status
+            additionalProperties: true
+            type: object
+      summary: Get heartbeat
       tags:
-      - health
+      - Health
   /live:
     get:
-      description: Checks if the service is alive
+      description: Checks if the service is alive and responding
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-      summary: Check service liveness
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Get liveness status
       tags:
-      - health
+      - Health
   /ready:
     get:
-      description: Checks if the service is ready to serve traffic
+      description: Checks if the service is ready to serve requests by verifying dependencies
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "503":
-          description: Service Unavailable
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Check service readiness
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Get readiness status
       tags:
-      - health
+      - Health
   /system:
     get:
-      description: Returns information about the system running the API
+      description: Returns detailed system information including memory usage, CPU
+        count, and runtime stats
       produces:
       - application/json
       responses:
@@ -124,7 +118,7 @@ paths:
             $ref: '#/definitions/handlers.SystemInfoResponse'
       summary: Get system information
       tags:
-      - health
+      - Health
 schemes:
 - http
 - https

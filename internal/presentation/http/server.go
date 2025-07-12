@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,17 +10,20 @@ import (
 	"time"
 
 	"go-clean-template/internal/infrastructure/config"
+	"go-clean-template/internal/infrastructure/logger"
 )
 
 // Server represents the HTTP server
 type Server struct {
 	server *http.Server
 	config *config.Config
+	logger logger.Logger
 }
 
 // NewServer creates a new HTTP server
-func NewServer(config *config.Config) *Server {
-	router := SetupRoutes()
+func NewServer(config *config.Config, log logger.Logger) *Server {
+	// Setup routes with configuration and logger
+	router := SetupRoutes(config, log)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%s", config.Server.Port),
@@ -33,6 +35,7 @@ func NewServer(config *config.Config) *Server {
 	return &Server{
 		server: server,
 		config: config,
+		logger: log,
 	}
 }
 
@@ -40,10 +43,22 @@ func NewServer(config *config.Config) *Server {
 func (s *Server) Start() error {
 	// Start server in a goroutine
 	go func() {
-		log.Printf("Server starting on port %s", s.config.Server.Port)
-		log.Printf("Swagger UI available at http://%s:%s/swagger/index.html", s.config.Server.Host, s.config.Server.Port)
+		s.logger.Info("HTTP server starting",
+			logger.String("port", s.config.Server.Port),
+			logger.String("host", s.config.Server.Host),
+			logger.String("environment", s.config.Server.Environment),
+			logger.Duration("read_timeout", time.Duration(s.config.Server.ReadTimeout)*time.Second),
+			logger.Duration("write_timeout", time.Duration(s.config.Server.WriteTimeout)*time.Second),
+		)
+
+		if s.config.Swagger.Enabled {
+			s.logger.Info("Swagger UI available",
+				logger.String("url", fmt.Sprintf("http://%s:%s/swagger/index.html", s.config.Server.Host, s.config.Server.Port)),
+			)
+		}
+
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+			s.logger.Fatal("HTTP server failed to start", logger.Error(err))
 		}
 	}()
 
@@ -57,15 +72,16 @@ func (s *Server) Start() error {
 
 // Shutdown gracefully shuts down the server
 func (s *Server) Shutdown() error {
-	log.Println("Shutting down server...")
+	s.logger.Info("Initiating graceful server shutdown")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := s.server.Shutdown(ctx); err != nil {
+		s.logger.Error("Server forced to shutdown", logger.Error(err))
 		return fmt.Errorf("server forced to shutdown: %w", err)
 	}
 
-	log.Println("Server exited properly")
+	s.logger.Info("Server shutdown completed successfully")
 	return nil
 }

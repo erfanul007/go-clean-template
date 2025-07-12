@@ -21,44 +21,42 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
-// Common error constructors
-func NewBadRequest(message string) *AppError {
+// New creates a new AppError with the given status, code, and message
+func New(status int, code, message string) *AppError {
 	return &AppError{
-		Code:    "BAD_REQUEST",
+		Code:    code,
 		Message: message,
-		Status:  http.StatusBadRequest,
+		Status:  status,
 	}
+}
+
+// NewWithCause creates a new AppError with a cause
+func NewWithCause(status int, code, message string, cause error) *AppError {
+	return &AppError{
+		Code:    code,
+		Message: message,
+		Status:  status,
+		Cause:   cause,
+	}
+}
+
+// Common error constructors for convenience
+func NewBadRequest(message string) *AppError {
+	return New(http.StatusBadRequest, "BAD_REQUEST", message)
 }
 
 func NewUnauthorized(message string) *AppError {
-	return &AppError{
-		Code:    "UNAUTHORIZED",
-		Message: message,
-		Status:  http.StatusUnauthorized,
-	}
+	return New(http.StatusUnauthorized, "UNAUTHORIZED", message)
 }
 
 func NewForbidden(message string) *AppError {
-	return &AppError{
-		Code:    "FORBIDDEN",
-		Message: message,
-		Status:  http.StatusForbidden,
-	}
+	return New(http.StatusForbidden, "FORBIDDEN", message)
 }
 
 func NewNotFound(message string) *AppError {
-	return &AppError{
-		Code:    "NOT_FOUND",
-		Message: message,
-		Status:  http.StatusNotFound,
-	}
+	return New(http.StatusNotFound, "NOT_FOUND", message)
 }
 
 func NewInternalError(message string, cause error) *AppError {
-	return &AppError{
-		Code:    "INTERNAL_ERROR",
-		Message: message,
-		Status:  http.StatusInternalServerError,
-		Cause:   cause,
-	}
+	return NewWithCause(http.StatusInternalServerError, "INTERNAL_ERROR", message, cause)
 }

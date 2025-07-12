@@ -24,14 +24,14 @@ const docTemplate = `{
     "paths": {
         "/health": {
             "get": {
-                "description": "Returns detailed health status of the API and its dependencies",
+                "description": "Returns the basic health status of the service",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "Health"
                 ],
-                "summary": "Get detailed health information",
+                "summary": "Get health status",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -44,19 +44,20 @@ const docTemplate = `{
         },
         "/heartbeat": {
             "get": {
-                "description": "Returns a simple heartbeat response to check if the service is running",
+                "description": "Returns a simple heartbeat response to verify service is alive",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "Health"
                 ],
-                "summary": "Get heartbeat status",
+                "summary": "Get heartbeat",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.HeartbeatResponse"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -64,20 +65,19 @@ const docTemplate = `{
         },
         "/live": {
             "get": {
-                "description": "Checks if the service is alive",
+                "description": "Checks if the service is alive and responding",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "Health"
                 ],
-                "summary": "Check service liveness",
+                "summary": "Get liveness status",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.HealthResponse"
                         }
                     }
                 }
@@ -85,27 +85,19 @@ const docTemplate = `{
         },
         "/ready": {
             "get": {
-                "description": "Checks if the service is ready to serve traffic",
+                "description": "Checks if the service is ready to serve requests by verifying dependencies",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "Health"
                 ],
-                "summary": "Check service readiness",
+                "summary": "Get readiness status",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.HealthResponse"
                         }
                     }
                 }
@@ -113,12 +105,12 @@ const docTemplate = `{
         },
         "/system": {
             "get": {
-                "description": "Returns information about the system running the API",
+                "description": "Returns detailed system information including memory usage, CPU count, and runtime stats",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "Health"
                 ],
                 "summary": "Get system information",
                 "responses": {
@@ -159,36 +151,37 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.HeartbeatResponse": {
+        "handlers.SystemInfoResponse": {
             "type": "object",
             "properties": {
-                "beat": {
+                "go_version": {
                     "type": "string"
+                },
+                "memory": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "num_cpu": {
+                    "type": "integer"
+                },
+                "num_goroutine": {
+                    "type": "integer"
                 },
                 "service": {
                     "type": "string"
                 },
+                "status": {
+                    "type": "string"
+                },
                 "timestamp": {
                     "type": "string"
-                }
-            }
-        },
-        "handlers.SystemInfoResponse": {
-            "type": "object",
-            "properties": {
-                "cpu_count": {
-                    "type": "integer"
                 },
-                "go_version": {
+                "uptime": {
                     "type": "string"
                 },
-                "goroutines": {
-                    "type": "integer"
-                },
-                "memory_alloc_mb": {
-                    "type": "string"
-                },
-                "memory_total_mb": {
+                "version": {
                     "type": "string"
                 }
             }
@@ -199,7 +192,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http", "https"},
 	Title:            "Go Clean Architecture API",

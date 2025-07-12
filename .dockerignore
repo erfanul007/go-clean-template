@@ -3,8 +3,6 @@
 .gitignore
 
 # Documentation
-README.md
-DOCKER.md
 *.md
 
 # Development files
@@ -12,70 +10,7 @@ DOCKER.md
 .env.*
 !.env.example
 
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-*.exe
-*.dll
-*.so
-*.dylib
-go-clean-template
-main
-
-# Test files
-*.test
-coverage.out
-coverage.html
-
-# Temporary files
-*.tmp
-*.log
-
-# Docker
-Dockerfile*
-docker-compose*.yml
-
-# Dependencies (will be downloaded in container)
-vendor/
-
-# Go module cache (handled by Docker volumes)
-go.sum.backup
-
-# Air (live reload)
-.air.toml
-tmp/
-
-# Scripts
-scripts/
-
-# Deployment files
-deployments/
-
-# Task files
-Taskfile.yml
-
-# Performance: Exclude large unnecessary files
-*.tar
-*.tar.gz
-*.zip
-*.rar
-
-# Go build artifacts
-*.out
-*.prof
-*.mem
-*.cpu
-
-# Editor files
+# IDE and Editor files
 .vscode/
 .idea/
 *.swp
@@ -88,5 +23,49 @@ Taskfile.yml
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
 Thumbs.db
+ehthumbs.db
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+go-clean-template
+main
+*.out
+*.prof
+*.mem
+*.cpu
+
+# Test files
+*.test
+coverage.out
+coverage.html
+
+# Temporary files
+*.tmp
+*.log
+tmp/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+
+# Dependencies
+vendor/
+go.sum.backup
+
+# Air (live reload)
+.air.toml
+
+# Scripts and deployment
+scripts/
+deployments/
+Taskfile.yml
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+*.rar

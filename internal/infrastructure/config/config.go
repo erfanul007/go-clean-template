@@ -57,8 +57,23 @@ type AuthConfig struct {
 
 // LoggingConfig holds logging configuration
 type LoggingConfig struct {
-	Level  string `mapstructure:"level"`
-	Format string `mapstructure:"format"`
+	Level            string            `mapstructure:"level"`
+	Format           string            `mapstructure:"format"`
+	StartupLevel     string            `mapstructure:"startup_level"`
+	StartupFormat    string            `mapstructure:"startup_format"`
+	EnableCaller     bool              `mapstructure:"enable_caller"`
+	EnableStacktrace bool              `mapstructure:"enable_stacktrace"`
+	File             FileLoggingConfig `mapstructure:"file"`
+}
+
+// FileLoggingConfig holds file-based logging configuration
+type FileLoggingConfig struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	Directory  string `mapstructure:"directory"`
+	MaxSize    int    `mapstructure:"max_size"`    // MB
+	MaxBackups int    `mapstructure:"max_backups"` // Number of backup files
+	MaxAge     int    `mapstructure:"max_age"`     // Days
+	Compress   bool   `mapstructure:"compress"`
 }
 
 // SwaggerConfig holds Swagger documentation configuration
@@ -75,9 +90,12 @@ type SwaggerConfig struct {
 
 // CORSConfig holds CORS configuration
 type CORSConfig struct {
-	AllowedOrigins []string `mapstructure:"allowed_origins"`
-	AllowedMethods []string `mapstructure:"allowed_methods"`
-	AllowedHeaders []string `mapstructure:"allowed_headers"`
+	AllowedOrigins   []string `mapstructure:"allowed_origins"`
+	AllowedMethods   []string `mapstructure:"allowed_methods"`
+	AllowedHeaders   []string `mapstructure:"allowed_headers"`
+	ExposedHeaders   []string `mapstructure:"exposed_headers"`
+	AllowCredentials bool     `mapstructure:"allow_credentials"`
+	MaxAge           int      `mapstructure:"max_age"`
 }
 
 // MetricsConfig holds metrics configuration
@@ -88,8 +106,8 @@ type MetricsConfig struct {
 
 // RateLimitConfig holds rate limiting configuration
 type RateLimitConfig struct {
-	Requests int `mapstructure:"requests"`
-	Window   int `mapstructure:"window"`
+	Enabled           bool `mapstructure:"enabled"`
+	RequestsPerMinute int  `mapstructure:"requests_per_minute"`
 }
 
 // Load loads configuration from environment variables and config files
@@ -133,58 +151,33 @@ func Load() (*Config, error) {
 	return &config, nil
 }
 
-// setDefaults sets default values for configuration
+// setDefaults sets essential default values for configuration
+// Only critical fallbacks that must be available even without config.yaml
 func setDefaults() {
-	// Server defaults
+	// Essential server defaults (required for startup)
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("server.host", "localhost")
 	viper.SetDefault("server.environment", "development")
-	viper.SetDefault("server.read_timeout", 30)
-	viper.SetDefault("server.write_timeout", 30)
 
-	// Database defaults
+	// Critical database defaults (required for connection)
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 5432)
-	viper.SetDefault("database.user", "postgres")
-	viper.SetDefault("database.password", "postgres")
-	viper.SetDefault("database.dbname", "app_db")
 	viper.SetDefault("database.sslmode", "disable")
 
-	// Redis defaults
+	// Redis connection defaults
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("redis.password", "")
 
-	// Auth defaults
-	viper.SetDefault("auth.jwt_secret", "your-super-secret-jwt-key-change-this-in-production")
+	// Security defaults (critical for auth)
 	viper.SetDefault("auth.jwt_expiration", 3600)
 
-	// Logging defaults
+	// Minimal logging defaults (only critical fallbacks)
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.format", "json")
 
-	// Swagger defaults
-	viper.SetDefault("swagger.enabled", true)
-	viper.SetDefault("swagger.route", "/swagger/*")
-	viper.SetDefault("swagger.title", "Go Clean Architecture API")
-	viper.SetDefault("swagger.description", "A comprehensive API template built with Go and Clean Architecture")
-	viper.SetDefault("swagger.version", "1.0")
-	viper.SetDefault("swagger.host", "localhost:8080")
-	viper.SetDefault("swagger.base_path", "/api/v1")
-	viper.SetDefault("swagger.schemes", []string{"http", "https"})
-
-	// CORS defaults
-	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:3000", "http://localhost:8080"})
-	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
-	viper.SetDefault("cors.allowed_headers", []string{"Content-Type", "Authorization"})
-
-	// Metrics defaults
-	viper.SetDefault("metrics.enabled", true)
-	viper.SetDefault("metrics.port", "9090")
-
-	// Rate limiting defaults
-	viper.SetDefault("rate_limit.requests", 100)
-	viper.SetDefault("rate_limit.window", 60)
+	// Note: Most configuration is now in config.yaml
+	// These defaults are only fallbacks for critical startup requirements
 }
 
 // loadEnvFile loads environment variables from .env file
@@ -229,13 +222,14 @@ func loadEnvFile() error {
 }
 
 // mapEnvVariables maps environment variables to config fields
+// Only maps environment-specific and sensitive configurations
 func mapEnvVariables() {
-	// Server
+	// Server configuration (environment-specific)
 	_ = viper.BindEnv("server.port", "PORT")
 	_ = viper.BindEnv("server.host", "HOST")
 	_ = viper.BindEnv("server.environment", "ENVIRONMENT")
 
-	// Database
+	// Database configuration (sensitive and environment-specific)
 	_ = viper.BindEnv("database.host", "DB_HOST")
 	_ = viper.BindEnv("database.port", "DB_PORT")
 	_ = viper.BindEnv("database.user", "DB_USER")
@@ -243,34 +237,21 @@ func mapEnvVariables() {
 	_ = viper.BindEnv("database.dbname", "DB_NAME")
 	_ = viper.BindEnv("database.sslmode", "DB_SSLMODE")
 
-	// Redis
+	// Redis configuration (sensitive and environment-specific)
 	_ = viper.BindEnv("redis.host", "REDIS_HOST")
 	_ = viper.BindEnv("redis.port", "REDIS_PORT")
 	_ = viper.BindEnv("redis.password", "REDIS_PASSWORD")
 
-	// Auth
+	// Authentication (sensitive)
 	_ = viper.BindEnv("auth.jwt_secret", "JWT_SECRET")
 	_ = viper.BindEnv("auth.jwt_expiration", "JWT_EXPIRATION")
 
-	// Logging
+	// Logging (environment-specific overrides only)
+	// Only bind environment variables for values that might need runtime override
 	_ = viper.BindEnv("logging.level", "LOG_LEVEL")
 	_ = viper.BindEnv("logging.format", "LOG_FORMAT")
 
-	// Swagger - typically not set via env vars but could be
-	_ = viper.BindEnv("swagger.enabled", "SWAGGER_ENABLED")
-	_ = viper.BindEnv("swagger.host", "SWAGGER_HOST")
-	_ = viper.BindEnv("swagger.base_path", "SWAGGER_BASE_PATH")
-
-	// CORS
-	_ = viper.BindEnv("cors.allowed_origins", "CORS_ALLOWED_ORIGINS")
-	_ = viper.BindEnv("cors.allowed_methods", "CORS_ALLOWED_METHODS")
-	_ = viper.BindEnv("cors.allowed_headers", "CORS_ALLOWED_HEADERS")
-
-	// Metrics
-	_ = viper.BindEnv("metrics.enabled", "METRICS_ENABLED")
-	_ = viper.BindEnv("metrics.port", "METRICS_PORT")
-
-	// Rate limiting
-	_ = viper.BindEnv("rate_limit.requests", "RATE_LIMIT_REQUESTS")
-	_ = viper.BindEnv("rate_limit.window", "RATE_LIMIT_WINDOW")
+	// Note: Most logging, Swagger, Metrics, CORS, and Rate Limiting configurations
+	// are now statically defined in config.yaml and don't need environment variable bindings
+	// Only critical runtime overrides are bound above
 }

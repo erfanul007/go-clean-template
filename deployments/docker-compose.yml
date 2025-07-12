@@ -1,5 +1,4 @@
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: go-clean-template-db
@@ -11,8 +10,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - go-clean-template-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d app_db"]
       interval: 10s
@@ -20,16 +17,13 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: go-clean-template-redis
     ports:
-      - "6380:6380"
+      - "6380:6379"
     volumes:
       - redis_data:/data
-    networks:
-      - go-clean-template-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -37,14 +31,11 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # API Application
   api:
     build:
       context: ..
       dockerfile: build/Dockerfile
-      target: development  # Use development stage for faster rebuilds
-      cache_from:
-        - golang:1.24-alpine
+      target: development
     container_name: go-clean-template-api
     ports:
       - "8080:8080"
@@ -57,24 +48,22 @@ services:
       - DB_NAME=app_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - ENV=development
+      - ENVIRONMENT=development
       - LOG_LEVEL=debug
       - JWT_SECRET=dev-secret
       - JWT_EXPIRATION=86400
-      # Go module proxy for faster downloads
       - GOPROXY=https://proxy.golang.org,direct
       - GOSUMDB=sum.golang.org
     volumes:
       - ../:/app:cached
-      - go_modules:/go/pkg/mod          # Go module cache
-      - go_build_cache:/root/.cache/go-build  # Go build cache
+      - go_modules:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+      - app_logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks:
-      - go-clean-template-network
     restart: unless-stopped
     develop:
       watch:
@@ -82,7 +71,6 @@ services:
           path: ../
           target: /app
           ignore:
-            - node_modules/
             - .git/
             - tmp/
             - vendor/
@@ -93,9 +81,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  go_modules:        # Persistent Go module cache
-  go_build_cache:    # Persistent Go build cache
-
-networks:
-  go-clean-template-network:
-    driver: bridge
+  go_modules:
+  go_build_cache:
+  app_logs:

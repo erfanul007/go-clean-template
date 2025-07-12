@@ -8,7 +8,7 @@ A robust Go API template built following Clean Architecture principles and Domai
 - **Docker & Docker Compose** - [Install Docker](https://docs.docker.com/get-docker/)
 - **Task (Taskfile)** - [Installation guide](https://taskfile.dev/installation/)
 
-**Note:** No local Go installation required!
+**Note:** No local Go installation required! All operations run in Docker containers via Task commands.
 
 ### Setup & Run
 ```bash
@@ -28,25 +28,30 @@ task start  # One-command setup and start
 |---------|------|-----------|
 | **API** | 8080 | Go application with live reload |
 | **PostgreSQL** | 5432 | Primary database |
-| **Redis** | 6380 (host) | Caching layer |
+| **Redis** | 6379 | Caching layer |
 
 ## 📋 Essential Commands
 
 ```bash
-# Development
+# Development (Docker-first)
 task start              # Setup and start development
 task dev                # Start with live reload
 task check              # Run quality checks (format, lint, test)
 task health             # Check service health
 task clean              # Clean everything
 
-# Testing
+# Code Quality (in Docker)
+task fmt                # Format Go code
+task lint               # Lint code with golangci-lint
 task test               # Run tests
 task test-coverage      # Run with coverage
 
-# Dependencies
+# Dependencies (in Docker)
 task deps               # Download and tidy dependencies
 task deps-update        # Update dependencies
+
+# Documentation
+task swag-gen           # Generate Swagger docs
 ```
 
 For advanced Docker operations, see [DOCKER.md](docs/DOCKER.md).
@@ -58,7 +63,9 @@ For advanced Docker operations, see [DOCKER.md](docs/DOCKER.md).
 - **PostgreSQL 15** + **Redis 7** (configured)
 - **Viper** (config) + **Zap** (logging)
 - **Swagger/OpenAPI** documentation
-- **Docker & Docker Compose**
+- **Docker & Docker Compose** (Docker-first development)
+- **Task** (Taskfile.yml) for all operations
+- **Air** for live reload in containers
 - Health monitoring endpoints
 
 **Planned:**
@@ -170,10 +177,23 @@ Response ← Infrastructure ← Infrastructure
 
 ## 🔧 Configuration
 
-Uses hybrid configuration:
-- Environment variables (`.env` file)
-- YAML configuration (`config/config.yaml`)
-- Docker environment (docker-compose.yml)
+Uses **hybrid configuration system** with clear separation of concerns:
+
+### Configuration Layers (Priority: High → Low)
+1. **Environment Variables** - Runtime, sensitive, environment-specific
+2. **YAML Configuration** (`config/config.yaml`) - Static application behavior
+3. **Code Defaults** - Essential fallbacks for critical services
+
+### Configuration Files
+- **`.env.example`** → **`.env`** - Environment-specific and sensitive data
+- **`config/config.yaml`** - Static configurations (CORS, rate limiting, Swagger, metrics)
+- **`docker-compose.yml`** - Development environment setup
+
+### Key Features
+- **Security**: Sensitive data only in environment variables
+- **Flexibility**: Easy environment-specific overrides
+- **Maintainability**: Static configs in version control
+- **Deployment**: Simple `.env` file changes for different environments
 
 `task setup` automatically copies `.env.example` to `.env` and downloads dependencies.
 
@@ -185,6 +205,23 @@ task test-coverage      # Run with coverage
 ```
 
 All tests run in Docker for consistency across environments.
+
+## ⚡ Live Reload Development
+
+The project uses **Air** for live reload during development, automatically rebuilding and restarting the application when code changes are detected.
+
+### Configuration (`.air.toml`)
+- **Watches**: `cmd/`, `internal/`, `config/`, `docs/` directories
+- **File Types**: `.go`, `.yaml`, `.yml`, `.json` files
+- **Excludes**: Test files, temporary files, build artifacts
+- **Build Target**: `./tmp/main` (excluded from Docker context)
+
+### Usage
+```bash
+task dev    # Start with live reload (Docker-first approach)
+```
+
+**Benefits**: Instant feedback during development, no manual restarts needed, fully integrated with Docker development workflow. Air runs inside the development container, ensuring consistency across all environments.
 
 ## 🚀 Deployment
 
