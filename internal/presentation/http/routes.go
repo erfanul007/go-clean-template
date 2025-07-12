@@ -1,29 +1,37 @@
 package http
 
 import (
-	"log"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"go-clean-template/internal/infrastructure/config"
+	"go-clean-template/internal/infrastructure/logger"
 	"go-clean-template/internal/presentation/http/handlers"
+	"go-clean-template/internal/presentation/http/middlewares"
 	"go-clean-template/internal/presentation/swagger"
 )
 
 // SetupRoutes configures all API routes
-func SetupRoutes() *chi.Mux {
+func SetupRoutes(cfg *config.Config, log logger.Logger) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Basic middleware
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(middlewares.RequestLogger(log))
+	r.Use(middlewares.Recoverer(log))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	// Initialize handlers
-	healthHandler := handlers.NewHealthHandler()
+	// CORS middleware
+	r.Use(middlewares.CORS(cfg.CORS))
+
+	// Rate limiting middleware
+	r.Use(middlewares.RateLimit(cfg.RateLimit))
+
+	// Initialize handlers with logger
+	healthHandler := handlers.NewHealthHandler(log)
 
 	// API Routes
 	r.Route("/api/v1", func(r chi.Router) {
@@ -43,15 +51,16 @@ func SetupRoutes() *chi.Mux {
 	// Legacy health endpoint for backward compatibility
 	r.Get("/health", healthHandler.Health)
 
-	// Setup Swagger UI using the swagger package with configuration from global config
-	swaggerConfig, err := swagger.GetSwaggerConfig()
-	if err != nil {
-		// If there's an error loading the config, log it and continue without Swagger
-		// In a production application, you might want to handle this differently
-		log.Printf("Failed to load Swagger configuration: %v", err)
-		return r
+	// Setup Swagger UI
+	if cfg.Swagger.Enabled {
+		log.Info("Setting up Swagger documentation",
+			logger.String("route", cfg.Swagger.Route),
+			logger.String("title", cfg.Swagger.Title),
+		)
+		swagger.SetupSwagger(r, &cfg.Swagger)
+	} else {
+		log.Info("Swagger documentation disabled")
 	}
-	swagger.SetupSwagger(r, swaggerConfig)
 
 	return r
 }

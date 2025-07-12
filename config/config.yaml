@@ -1,25 +1,44 @@
+# Static configuration that rarely changes
+# Environment-specific values should be set via .env file
+
 server:
-  port: "8080"
-  host: "localhost"
   read_timeout: 30
   write_timeout: 30
-
-database:
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "postgres"
-  dbname: "app_db"
-  sslmode: "disable"
-
-auth:
-  jwt_secret: "your-secret-key"
-  jwt_expiration: 24
 
 logging:
   level: "info"
   format: "json"
+  enable_caller: true
+  enable_stacktrace: false
+  startup_level: "error"
+  startup_format: "console"
+  file:
+    enabled: true
+    directory: "./logs"
+    max_size: 100      # MB
+    max_backups: 5     # Number of backup files
+    max_age: 30        # Days
+    compress: true
+    separate_levels: true  # Create separate files for info, warn, error
 
 swagger:
   enabled: true
   route: "/swagger/*"
+  title: "Go Clean Architecture API"
+  description: "A comprehensive API template built with Go and Clean Architecture"
+  version: "1.0"
+  base_path: "/api/v1"
+  schemes: ["http", "https"]
+
+cors:
+  allowed_origins: ["http://localhost:3000", "http://localhost:8080"]
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowed_headers: ["Content-Type", "Authorization"]
+
+rate_limit:
+  enabled: true
+  requests_per_minute: 100
+
+metrics:
+  enabled: true
+  port: "9090"
