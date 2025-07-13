@@ -8,6 +8,8 @@ RUN apk add --no-cache git ca-certificates tzdata curl su-exec && \
     adduser -D -s /bin/sh -u 1000 devuser
 
 WORKDIR /app
+# Change ownership of /app to devuser so they can create subdirectories
+RUN chown devuser:devuser /app
 USER devuser
 
 # Copy go mod files first for better layer caching
@@ -23,10 +25,8 @@ RUN go install github.com/air-verse/air@latest
 # Copy source code
 COPY --chown=devuser:devuser . .
 
-# Create logs directory and set permissions
-RUN mkdir -p /app/logs && \
-    chown -R devuser:devuser /app/logs && \
-    chmod -R 755 /app/logs
+# Create logs directory - now devuser owns /app so this works
+RUN mkdir -p /app/logs
 
 # Switch to devuser
 USER devuser
